@@ -18,6 +18,7 @@ tests/graph_real.pb
 iter.*
 
 # out.txt
+test_if_cuda_multi_devices/test_dir/out.txt
 topol.tpr
 mdout.mdp
 traj*xtc

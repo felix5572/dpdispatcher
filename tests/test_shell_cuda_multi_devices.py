@@ -39,12 +39,13 @@ class TestShellCudaMultiDevices(unittest.TestCase):
             f2 = os.path.join('tmp_if_cuda_multi_devices/', submission.submission_hash, ii)
             self.assertEqual(get_file_md5(f1), get_file_md5(f2))
 
-        self.assertTrue(os.path.isfile(os.path.join('tmp_if_cuda_multi_devices/', submission.submission_hash, 'out.txt')))
+        self.assertTrue(os.path.isfile(os.path.join('test_if_cuda_multi_devices/', 'test_dir/', 'out.txt')))
 
     @classmethod
     def tearDownClass(cls):
         # pass
         shutil.rmtree('tmp_if_cuda_multi_devices/')
+        os.remove('test_if_cuda_multi_devices/test_dir/out.txt')
 
 
 
