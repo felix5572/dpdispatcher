@@ -1,4 +1,5 @@
 import sys, os, shutil, json
+import time
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 __package__ = 'tests'
 from .context import Submission, Job, Task, Resources
@@ -31,12 +32,14 @@ class TestShellCudaMultiDevices(unittest.TestCase):
             backward_common_files=['out.txt'],
             task_list=task_list
         )
-        submission.run_submission(clean=False)
+        return_value = submission.run_submission(clean=False)
 
-        for ii in ['out.txt', 'test.txt']:
+        for ii in ['test.txt']:
             f1 = os.path.join('test_if_cuda_multi_devices/', 'test_dir/', ii)
             f2 = os.path.join('tmp_if_cuda_multi_devices/', submission.submission_hash, ii)
             self.assertEqual(get_file_md5(f1), get_file_md5(f2))
+
+        self.assertTrue(os.path.isfile(os.path.join('tmp_if_cuda_multi_devices/', submission.submission_hash, 'out.txt')))
 
     @classmethod
     def tearDownClass(cls):
