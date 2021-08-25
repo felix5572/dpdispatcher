@@ -155,7 +155,8 @@ class Submission(object):
         """
         if not self.belonging_jobs:
             self.generate_jobs()
-        self.try_recover_from_json()
+        # self.try_recover_from_json()
+        self.try_recover_from_db()
         self.update_submission_state()
         if self.check_all_finished():
             dlog.info('info:check_all_finished: True')
@@ -163,7 +164,8 @@ class Submission(object):
             dlog.info('info:check_all_finished: False')
             self.upload_jobs()
             self.handle_unexpected_submission_state()
-            self.submission_to_json()
+            # self.submission_to_json()
+            self.save_submission_to_db()
             time.sleep(1)
             self.update_submission_state()
             self.check_all_finished()
@@ -177,7 +179,8 @@ class Submission(object):
             try:
                 time.sleep(30)
             except (Exception, KeyboardInterrupt, SystemExit) as e:
-                self.submission_to_json()
+                # self.submission_to_json()
+                self.save_submission_to_db()
                 dlog.exception(e)
                 dlog.info(f"submission exit: {self.submission_hash}")
                 dlog.info(f"at {self.machine.context.remote_root}")
@@ -189,7 +192,8 @@ class Submission(object):
             finally:
                 pass
         self.handle_unexpected_submission_state()
-        self.submission_to_json()
+        # self.submission_to_json()
+        self.save_submission_to_db()
         self.download_jobs()
         if clean:
             self.clean_jobs()
@@ -220,7 +224,8 @@ class Submission(object):
             for job in self.belonging_jobs:
                 job.handle_unexpected_job_state()
         except Exception as e:
-            self.submission_to_json()
+            # self.submission_to_json()
+            self.save_submission_to_db()
             raise RuntimeError(
                 f"Meet errors will handle unexpected submission state.\n"
                 f"Debug information: remote_root=={self.machine.context.remote_root}.\n"
@@ -249,7 +254,8 @@ class Submission(object):
         """
         # self.update_submission_state()
         if any( (job.job_state in  [JobStatus.terminated, JobStatus.unknown] ) for job in self.belonging_jobs):
-            self.submission_to_json()
+            # self.submission_to_json()
+            self.save_submission_to_db()
         if any( (job.job_state in  [JobStatus.running,
             JobStatus.waiting,
             JobStatus.unsubmitted,
@@ -302,6 +308,9 @@ class Submission(object):
     def clean_jobs(self):
         self.machine.context.clean()
 
+    def save_submission_to_db(self):
+        self.machine.db.save_submission_to_db(self)
+
     def submission_to_json(self):
         # self.update_submission_state()
         write_str = json.dumps(self.serialize(), indent=4, default=str)
@@ -317,6 +326,9 @@ class Submission(object):
         return submission
 
     # def check_if_recover()
+
+    def try_recover_from_db(self):
+        pass
 
     def try_recover_from_json(self):
         submission_file_name = "{submission_hash}.json".format(submission_hash=self.submission_hash)
