@@ -55,8 +55,8 @@ class LocalContext(BaseContext) :
         remote_profile:
         """
         assert(type(local_root) == str)
-        self.temp_local_root = os.path.abspath(local_root)
-        self.temp_remote_root = os.path.abspath(remote_root)
+        self.abs_local_root = os.path.abspath(local_root)
+        self.abs_remote_root = os.path.abspath(remote_root)
         self.remote_profile = remote_profile
         # self.work_profile = work_profile
         # self.job_uuid = job_uuid
@@ -88,8 +88,8 @@ class LocalContext(BaseContext) :
     
     def bind_submission(self, submission):
         self.submission = submission
-        self.local_root = os.path.join(self.temp_local_root, submission.work_base)
-        self.remote_root = os.path.join(self.temp_remote_root, submission.submission_hash)
+        self.subm_local_root = os.path.join(self.abs_local_root, submission.work_base)
+        self.subm_remote_root = os.path.join(self.abs_remote_root, submission.submission_hash)
         # print('debug:LocalContext.bind_submission', submission.submission_hash,
         #     self.local_root, self.remote_root)
 
@@ -115,13 +115,13 @@ class LocalContext(BaseContext) :
    #      return self._local_root
 
     def upload(self, submission):
-        os.makedirs(self.remote_root, exist_ok = True)
+        os.makedirs(self.subm_remote_root, exist_ok = True)
         # os.makedirs(self.remote_root, exist_ok = True)
         cwd = os.getcwd()
         # job_dirs = [ ii.task_work_path for ii in submission.belonging_tasks]
         for ii in submission.belonging_tasks:
-            local_job = os.path.join(self.local_root, ii.task_work_path)
-            remote_job = os.path.join(self.remote_root, ii.task_work_path)
+            local_job = os.path.join(self.subm_local_root, ii.task_work_path)
+            remote_job = os.path.join(self.subm_remote_root, ii.task_work_path)
             os.makedirs(remote_job, exist_ok = True)
             os.chdir(remote_job)
 
@@ -145,8 +145,8 @@ class LocalContext(BaseContext) :
                             os.path.join(remote_job, jj))
         os.chdir(cwd)
 
-        local_job = self.local_root
-        remote_job = self.remote_root
+        local_job = self.subm_local_root
+        remote_job = self.subm_remote_root
         # os.makedirs(remote_job, exist_ok = True)
         os.chdir(remote_job)
 
@@ -176,8 +176,8 @@ class LocalContext(BaseContext) :
                dereference = True) :
         cwd = os.getcwd()
         for ii in job_dirs :
-            local_job = os.path.join(self.local_root, ii)
-            remote_job = os.path.join(self.remote_root, ii)
+            local_job = os.path.join(self.subm_local_root, ii)
+            remote_job = os.path.join(self.subm_remote_root, ii)
             os.makedirs(remote_job, exist_ok = True)
             os.chdir(remote_job)
             for jj in local_up_files :
@@ -201,8 +201,8 @@ class LocalContext(BaseContext) :
         
         for ii in submission.belonging_tasks:
         # for ii in job_dirs :
-            local_job = os.path.join(self.local_root, ii.task_work_path)
-            remote_job = os.path.join(self.remote_root, ii.task_work_path)
+            local_job = os.path.join(self.subm_local_root, ii.task_work_path)
+            remote_job = os.path.join(self.subm_remote_root, ii.task_work_path)
             # flist = remote_down_files
             flist = ii.backward_files
             if back_error :
@@ -216,7 +216,7 @@ class LocalContext(BaseContext) :
                     if (not os.path.exists(rfile)) and (not os.path.exists(lfile)):
                         if check_exists :
                             if mark_failure:
-                                tag_file_path = os.path.join(self.local_root, ii.task_work_path, 'tag_failure_download_%s' % jj)
+                                tag_file_path = os.path.join(self.subm_local_root, ii.task_work_path, 'tag_failure_download_%s' % jj)
                                 with open(tag_file_path, 'w') as fp: 
                                     pass
                             else :
@@ -250,8 +250,8 @@ class LocalContext(BaseContext) :
             # remote_job = os.path.join(self.remote_root, ii.task_work_path)
             # flist = remote_down_files
             # flist = ii.backward_files
-        local_job = self.local_root
-        remote_job = self.remote_root
+        local_job = self.subm_local_root
+        remote_job = self.subm_remote_root
         flist = submission.backward_common_files
         if back_error :
             os.chdir(remote_job)
@@ -264,7 +264,7 @@ class LocalContext(BaseContext) :
                 if (not os.path.exists(rfile)) and (not os.path.exists(lfile)):
                     if check_exists :
                         if mark_failure:
-                            with open(os.path.join(self.local_root, 'tag_failure_download_%s' % jj), 'w') as fp: pass
+                            with open(os.path.join(self.subm_local_root, 'tag_failure_download_%s' % jj), 'w') as fp: pass
                         else :
                             pass
                     else :
@@ -302,8 +302,8 @@ class LocalContext(BaseContext) :
                  back_error=False) :
         cwd = os.getcwd()
         for ii in job_dirs :
-            local_job = os.path.join(self.local_root, ii)
-            remote_job = os.path.join(self.remote_root, ii)
+            local_job = os.path.join(self.subm_local_root, ii)
+            remote_job = os.path.join(self.subm_remote_root, ii)
             flist = remote_down_files
             if back_error :
                 os.chdir(remote_job)
@@ -316,7 +316,7 @@ class LocalContext(BaseContext) :
                     if (not os.path.exists(rfile)) and (not os.path.exists(lfile)):
                         if check_exists:
                             if mark_failure:
-                                with open(os.path.join(self.local_root, ii, 'tag_failure_download_%s' % jj), 'w') as fp:
+                                with open(os.path.join(self.subm_local_root, ii, 'tag_failure_download_%s' % jj), 'w') as fp:
                                     pass
                             else :
                                 pass
@@ -346,7 +346,7 @@ class LocalContext(BaseContext) :
     def block_checkcall(self,
                         cmd) :
         cwd = os.getcwd()
-        os.chdir(self.remote_root)
+        os.chdir(self.subm_remote_root)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         o, e = proc.communicate()
         stdout = SPRetObj(o)
@@ -360,7 +360,7 @@ class LocalContext(BaseContext) :
         
     def block_call(self, cmd) :
         cwd = os.getcwd()
-        os.chdir(self.remote_root)
+        os.chdir(self.subm_remote_root)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         o, e = proc.communicate()
         stdout = SPRetObj(o)
@@ -370,27 +370,27 @@ class LocalContext(BaseContext) :
         return code, None, stdout, stderr
 
     def clean(self):
-        shutil.rmtree(self.remote_root, ignore_errors=True)
+        shutil.rmtree(self.subm_remote_root, ignore_errors=True)
 
     # def _clean(self) :
     #     shutil.rmtree(self.remote_root, ignore_errors=True)
 
     def write_file(self, fname, write_str):
-        os.makedirs(self.remote_root, exist_ok = True)
-        with open(os.path.join(self.remote_root, fname), 'w') as fp :
+        os.makedirs(self.subm_remote_root, exist_ok = True)
+        with open(os.path.join(self.subm_remote_root, fname), 'w') as fp :
             fp.write(write_str)
 
     def read_file(self, fname):
-        with open(os.path.join(self.remote_root, fname), 'r') as fp:
+        with open(os.path.join(self.subm_remote_root, fname), 'r') as fp:
             ret = fp.read()
         return ret
 
     def check_file_exists(self, fname):
-        return os.path.isfile(os.path.join(self.remote_root, fname))
+        return os.path.isfile(os.path.join(self.subm_remote_root, fname))
         
     def call(self, cmd) :
         cwd = os.getcwd()
-        os.chdir(self.remote_root)
+        os.chdir(self.subm_remote_root)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         os.chdir(cwd)        
         return proc

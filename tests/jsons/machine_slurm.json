@@ -23,7 +23,9 @@
         "module_unload_list": ["singularity"],
         "module_list": ["singularity/3.0.0"],
         "source_list": ["./slurm_test.env"],
-        "envs": {"DP_DISPATCHER_EXPORT": "test_foo_bar_baz"},
-        "kwargs": {}
+        "envs": {"DP_DISPATCHER_EXPORT_VAR": "test_foo_bar_baz"},
+        "kwargs":{
+            "custom_gpu_line":"#SBATCH --gres=gpu:2080Ti:4"
+        }
     }
 }

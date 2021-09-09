@@ -185,9 +185,11 @@ class SSHContext(BaseContext):
                 **kwargs,
                 ):
         assert(type(local_root) == str)
-        self.temp_local_root = os.path.abspath(local_root)
+        self.local_root = local_root
+        self.abs_local_root = os.path.abspath(local_root)
         assert os.path.isabs(remote_root), f"remote_root must be a abspath"
-        self.temp_remote_root = remote_root
+        self.remote_root = remote_root
+        self.abs_remote_root = remote_root
 
         # self.job_uuid = None
         self.clean_asynchronously = clean_asynchronously
@@ -249,13 +251,13 @@ class SSHContext(BaseContext):
         self.ssh_session.close()
 
     def get_job_root(self) :
-        return self.remote_root
+        return self.subm_remote_root
 
     def bind_submission(self, submission):
         self.submission = submission
-        self.local_root = pathlib.PurePath(os.path.join(self.temp_local_root, submission.work_base)).as_posix()
+        self.subm_local_root = pathlib.PurePath(os.path.join(self.abs_local_root, submission.work_base)).as_posix()
         # self.remote_root = os.path.join(self.temp_remote_root, self.submission.submission_hash, self.submission.work_base )
-        self.remote_root = pathlib.PurePath(os.path.join(self.temp_remote_root, self.submission.submission_hash)).as_posix()
+        self.subm_remote_root = pathlib.PurePath(os.path.join(self.abs_remote_root, self.submission.submission_hash)).as_posix()
 
         # self.job_uuid = submission.submission_hash
         # dlog.debug("debug:SSHContext.bind_submission"
@@ -306,14 +308,14 @@ class SSHContext(BaseContext):
         self.ssh_session.sftp.chdir(None)
 
         cwd = os.getcwd()
-        os.chdir(self.local_root) 
+        os.chdir(self.subm_local_root) 
         file_list = []
         directory_list = []
         for task in submission.belonging_tasks:
             directory_list.append(task.task_work_path)
         #     file_list.append(ii)
             self._walk_directory(task.forward_files, task.task_work_path, file_list, directory_list)
-        self._walk_directory(submission.forward_common_files, self.local_root, file_list, directory_list)
+        self._walk_directory(submission.forward_common_files, self.subm_local_root, file_list, directory_list)
 
         # check if the same file exists on the remote file
         # only check sha256 when the job is recovered
@@ -322,7 +324,7 @@ class SSHContext(BaseContext):
             sha256_list = []
             for jj in file_list:
                 sha256 = get_sha256(jj)
-                jj_rel = pathlib.PurePath(os.path.relpath(jj, self.local_root)).as_posix()
+                jj_rel = pathlib.PurePath(os.path.relpath(jj, self.subm_local_root)).as_posix()
                 sha256_list.append(f"{sha256}  {jj_rel}")
             # write to remote
             sha256_file = os.path.join(self.remote_root, ".tmp.sha256." + str(uuid.uuid4()))
@@ -337,7 +339,7 @@ class SSHContext(BaseContext):
                 file_list.append(ii.split(":")[0])
         else:
             # convert to relative path to local_root
-            file_list = [os.path.relpath(jj, self.local_root) for jj in file_list] 
+            file_list = [os.path.relpath(jj, self.subm_local_root) for jj in file_list] 
 
         self._put_files(file_list, dereference = dereference, directories=directory_list)
         os.chdir(cwd)
@@ -351,7 +353,7 @@ class SSHContext(BaseContext):
                  back_error=False) :
         self.ssh_session.ensure_alive()
         cwd = os.getcwd()
-        os.chdir(self.local_root) 
+        os.chdir(self.subm_local_root) 
         file_list = []
         # for ii in job_dirs :
         for task in submission.belonging_tasks :
@@ -361,7 +363,7 @@ class SSHContext(BaseContext):
                     if self.check_file_exists(file_name):
                         file_list.append(file_name)
                     elif mark_failure :
-                        with open(os.path.join(self.local_root, task.task_work_path, 'tag_failure_download_%s' % jj), 'w') as fp: pass
+                        with open(os.path.join(self.subm_local_root, task.task_work_path, 'tag_failure_download_%s' % jj), 'w') as fp: pass
                     else:
                         pass
                 else:
@@ -487,7 +489,7 @@ class SSHContext(BaseContext):
         of = self.submission.submission_hash + '.tgz'
         # local tar
         cwd = os.getcwd()
-        os.chdir(self.local_root)
+        os.chdir(self.subm_local_root)
         if os.path.isfile(of) :
             os.remove(of)
         with tarfile.open(of, "w:gz", dereference = dereference) as tar:
@@ -500,12 +502,12 @@ class SSHContext(BaseContext):
 
         self.ssh_session.ensure_alive()
         try:
-            self.sftp.mkdir(self.remote_root)
+            self.sftp.mkdir(self.subm_remote_root)
         except OSError: 
             pass
         # trans
-        from_f = pathlib.PurePath(os.path.join(self.local_root, of)).as_posix()
-        to_f = pathlib.PurePath(os.path.join(self.remote_root, of)).as_posix()
+        from_f = pathlib.PurePath(os.path.join(self.subm_local_root, of)).as_posix()
+        to_f = pathlib.PurePath(os.path.join(self.subm_remote_root, of)).as_posix()
         try:
            self.sftp.put(from_f, to_f)
         except FileNotFoundError:
@@ -543,14 +545,14 @@ class SSHContext(BaseContext):
             # -f, --force force overwrite of output file and compress links
             self.block_checkcall('gzip -f %s' % of_tar)
         # trans
-        from_f = pathlib.PurePath(os.path.join(self.remote_root, of)).as_posix()
-        to_f = pathlib.PurePath(os.path.join(self.local_root, of)).as_posix()
+        from_f = pathlib.PurePath(os.path.join(self.subm_remote_root, of)).as_posix()
+        to_f = pathlib.PurePath(os.path.join(self.subm_local_root, of)).as_posix()
         if os.path.isfile(to_f) :
             os.remove(to_f)
         self.sftp.get(from_f, to_f)
         # extract
         cwd = os.getcwd()
-        os.chdir(self.local_root)
+        os.chdir(self.subm_local_root)
         with tarfile.open(of, "r:gz") as tar:
             tar.extractall()
         os.chdir(cwd)        

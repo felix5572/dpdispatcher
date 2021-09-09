@@ -5,6 +5,7 @@ from dargs import Argument
 
 from dpdispatcher import dlog
 from dpdispatcher.base_context import BaseContext
+from dpdispatcher.database import BaseDB
 
 script_template="""\
 {script_header}
@@ -69,6 +70,7 @@ class Machine(object):
         local_root=None,
         remote_root=None,
         remote_profile={},
+        db_settings={},
         *,
         context=None
     ):
@@ -82,6 +84,8 @@ class Machine(object):
             )
         else:
             pass
+        db = BaseDB(db_settings)
+        self.db = db
         self.bind_context(context=context)
 
     def bind_context(self, context):
@@ -101,6 +105,10 @@ class Machine(object):
         cls.subclasses_dict[cls.__name__]=cls
         cls.subclasses_dict[cls.__name__.lower()]=cls
         # cls.subclasses.append(cls)
+
+    def serialize(self):
+        machine_dict = {}
+        # machine_dict['local_root']
 
     @classmethod
     def load_from_json(cls, json_path):

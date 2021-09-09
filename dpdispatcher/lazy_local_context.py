@@ -31,8 +31,10 @@ class LazyLocalContext(BaseContext) :
         remote_profile:
         """
         assert(type(local_root) == str)
-        self.temp_local_root = os.path.abspath(local_root)
-        self.temp_remote_root = os.path.abspath(local_root)
+        self.local_root = local_root
+        self.remote_root = local_root
+        self.abs_local_root = os.path.abspath(local_root)
+        self.abs_remote_root = os.path.abspath(local_root)
         self.remote_profile = remote_profile
         # self.job_uuid = None
         # self.submission = None
@@ -55,15 +57,15 @@ class LazyLocalContext(BaseContext) :
 
     def bind_submission(self, submission):
         self.submission = submission
-        self.local_root = os.path.join(self.temp_local_root, submission.work_base)
-        self.remote_root = os.path.join(self.temp_local_root, submission.work_base)
+        self.subm_local_root = os.path.join(self.abs_local_root, submission.work_base)
+        self.subm_remote_root = os.path.join(self.abs_local_root, submission.work_base)
         # dlog.debug("debug:LazyLocalContext.bind_submission;" 
         #     "submission.submission_hash:{submission.submission_hash};"
         #     "self.local_root:{self.local_root};"
         #     "self.remote_root:{self.remote_root}")
 
     def get_job_root(self) :
-        return self.local_root
+        return self.subm_local_root
 
     def upload(self,
                jobs,
@@ -96,7 +98,7 @@ class LazyLocalContext(BaseContext) :
                         cmd) :
         cwd = os.getcwd()
         # script_dir = os.path.join(self.local_root, self.submission.work_base)
-        os.chdir(self.local_root)
+        os.chdir(self.subm_local_root)
         # os.chdir(script_dir)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         o, e = proc.communicate()
@@ -111,7 +113,7 @@ class LazyLocalContext(BaseContext) :
         
     def block_call(self, cmd) :
         cwd = os.getcwd()
-        os.chdir(self.local_root)
+        os.chdir(self.subm_local_root)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         o, e = proc.communicate()
         stdout = SPRetObj(o)
@@ -124,12 +126,12 @@ class LazyLocalContext(BaseContext) :
         pass
 
     def write_file(self, fname, write_str):
-        os.makedirs(self.remote_root, exist_ok = True)
-        with open(os.path.join(self.remote_root, fname), 'w') as fp :
+        os.makedirs(self.subm_remote_root, exist_ok = True)
+        with open(os.path.join(self.subm_remote_root, fname), 'w') as fp :
             fp.write(write_str)
 
     def read_file(self, fname):
-        with open(os.path.join(self.remote_root, fname), 'r') as fp:
+        with open(os.path.join(self.subm_remote_root, fname), 'r') as fp:
             ret = fp.read()
         return ret
 
@@ -138,11 +140,11 @@ class LazyLocalContext(BaseContext) :
         # file_to_be_checked = os.path.join(submission_work_base, fname)
         # print('debug:dpdispatcher.LazyLocalContext().check_file_exists:file_to_be_checked', file_to_be_checked)
         # return os.path.isfile(file_to_be_checked)
-        return os.path.isfile(os.path.join(self.remote_root, fname))
+        return os.path.isfile(os.path.join(self.subm_remote_root, fname))
         
     def call(self, cmd) :
         cwd = os.getcwd()
-        os.chdir(self.local_root)
+        os.chdir(self.subm_local_root)
         proc = sp.Popen(cmd, shell=True, stdout = sp.PIPE, stderr = sp.PIPE)
         os.chdir(cwd)        
         return proc
