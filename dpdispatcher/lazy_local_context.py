@@ -31,11 +31,15 @@ class LazyLocalContext(BaseContext) :
         remote_profile:
         """
         assert(type(local_root) == str)
+
+
+        self.context_type = 'lazy_local_context'
         self.local_root = local_root
         self.remote_root = local_root
+        self.remote_profile = remote_profile
+
         self.abs_local_root = os.path.abspath(local_root)
         self.abs_remote_root = os.path.abspath(local_root)
-        self.remote_profile = remote_profile
         # self.job_uuid = None
         # self.submission = None
         # if job_uuid:

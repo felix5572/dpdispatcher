@@ -5,7 +5,9 @@ from dargs import Argument
 
 from dpdispatcher import dlog
 from dpdispatcher.base_context import BaseContext
-from dpdispatcher.database import BaseDB
+from dpdispatcher.database import BaseDatabase
+from hashlib import sha1
+
 
 script_template="""\
 {script_header}
@@ -70,10 +72,12 @@ class Machine(object):
         local_root=None,
         remote_root=None,
         remote_profile={},
-        db_settings={},
+        database_settings={},
         *,
-        context=None
+        context=None,
+        database=None
     ):
+        self.batch_type = batch_type
         if context is None:
             assert isinstance(self, self.__class__.subclasses_dict[batch_type])
             context = BaseContext(
@@ -84,9 +88,14 @@ class Machine(object):
             )
         else:
             pass
-        db = BaseDB(db_settings)
-        self.db = db
+        database = BaseDatabase(database_settings)
+
+        self.bind_database(database=database)
         self.bind_context(context=context)
+
+    def bind_database(self, database):
+        self.database = database
+        self.database.bind_machine = self
 
     def bind_context(self, context):
         self.context = context
@@ -108,7 +117,14 @@ class Machine(object):
 
     def serialize(self):
         machine_dict = {}
-        # machine_dict['local_root']
+        machine_dict['batch_type'] = self.batch_type
+        machine_dict['context_dict'] = self.context.serialize()
+        machine_dict['database_dict'] = self.database.serialize()
+        return machine_dict
+
+    def get_hash(self):
+        machine_hash = sha1(str(self.serialize(if_static=True)).encode('utf-8')).hexdigest()
+        return machine_hash
 
     @classmethod
     def load_from_json(cls, json_path):

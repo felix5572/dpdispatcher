@@ -184,11 +184,16 @@ class SSHContext(BaseContext):
                 *args,
                 **kwargs,
                 ):
+        
         assert(type(local_root) == str)
+
+        self.batch_type = 'ssh_context'
         self.local_root = local_root
+        self.remote_root = remote_root
+        self.remote_profile = remote_profile
+
         self.abs_local_root = os.path.abspath(local_root)
         assert os.path.isabs(remote_root), f"remote_root must be a abspath"
-        self.remote_root = remote_root
         self.abs_remote_root = remote_root
 
         # self.job_uuid = None

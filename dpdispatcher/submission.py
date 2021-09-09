@@ -103,10 +103,12 @@ class Submission(object):
             the dictionary converted from the Submission class instance
         """
         submission_dict = {}
-        if if_none_local_root:
-            submission_dict['local_root'] = None
+        
+        if self.machine is not None:
+            submission_dict['machine_dict'] = self.machine.serialize()
         else:
-            submission_dict['local_root'] = self.local_root
+            submission_dict['machine_dict'] = None
+
         submission_dict['work_base'] = self.work_base
         submission_dict['resources'] = self.resources.serialize()
         submission_dict['forward_common_files'] = self.forward_common_files
@@ -125,6 +127,7 @@ class Submission(object):
             raise RuntimeError("Not allowed to register tasks after generating jobs."
                     "submission hash error {self}".format(self=self))
         self.belonging_tasks.extend(task_list)
+
     def get_hash(self):
         return sha1(str(self.serialize(if_static=True)).encode('utf-8')).hexdigest()
 
@@ -142,7 +145,7 @@ class Submission(object):
             job.machine = machine
         if machine is not None:
             self.machine.context.bind_submission(self)
-            self.local_root = machine.context.temp_local_root
+            self.local_root = machine.context.local_root
         return self
 
     def run_submission(self, *, exit_on_submit=False, clean=True):
@@ -165,7 +168,7 @@ class Submission(object):
             self.upload_jobs()
             self.handle_unexpected_submission_state()
             # self.submission_to_json()
-            self.save_submission_to_db()
+            self.save_to_database()
             time.sleep(1)
             self.update_submission_state()
             self.check_all_finished()
@@ -179,8 +182,7 @@ class Submission(object):
             try:
                 time.sleep(30)
             except (Exception, KeyboardInterrupt, SystemExit) as e:
-                # self.submission_to_json()
-                self.save_submission_to_db()
+                self.save_to_database()
                 dlog.exception(e)
                 dlog.info(f"submission exit: {self.submission_hash}")
                 dlog.info(f"at {self.machine.context.remote_root}")
@@ -193,7 +195,7 @@ class Submission(object):
                 pass
         self.handle_unexpected_submission_state()
         # self.submission_to_json()
-        self.save_submission_to_db()
+        self.save_to_database()
         self.download_jobs()
         if clean:
             self.clean_jobs()
@@ -225,7 +227,7 @@ class Submission(object):
                 job.handle_unexpected_job_state()
         except Exception as e:
             # self.submission_to_json()
-            self.save_submission_to_db()
+            self.save_to_database()
             raise RuntimeError(
                 f"Meet errors will handle unexpected submission state.\n"
                 f"Debug information: remote_root=={self.machine.context.remote_root}.\n"
@@ -255,7 +257,7 @@ class Submission(object):
         # self.update_submission_state()
         if any( (job.job_state in  [JobStatus.terminated, JobStatus.unknown] ) for job in self.belonging_jobs):
             # self.submission_to_json()
-            self.save_submission_to_db()
+            self.save_to_database()
         if any( (job.job_state in  [JobStatus.running,
             JobStatus.waiting,
             JobStatus.unsubmitted,
@@ -308,8 +310,8 @@ class Submission(object):
     def clean_jobs(self):
         self.machine.context.clean()
 
-    def save_submission_to_db(self):
-        self.machine.db.save_submission_to_db(self)
+    def save_to_database(self):
+        self.machine.db.save_to_database(self)
 
     def submission_to_json(self):
         # self.update_submission_state()

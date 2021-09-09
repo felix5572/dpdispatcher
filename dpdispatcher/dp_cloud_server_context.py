@@ -24,8 +24,12 @@ class DpCloudServerContext(BaseContext):
         *args,
         **kwargs,
     ):
-        self.temp_local_root = os.path.abspath(local_root)
+        self.context_type = 'dp_cloud_server_context'
+        self.local_root = local_root
+        self.remote_root = remote_root
         self.remote_profile = remote_profile
+
+        self.abs_local_root = os.path.abspath(local_root)
         email = remote_profile.get("email", None)
         username = remote_profile.get('username', None)
         password = remote_profile['password']
@@ -49,7 +53,7 @@ class DpCloudServerContext(BaseContext):
 
     def bind_submission(self, submission):
         self.submission = submission
-        self.local_root = os.path.join(self.temp_local_root, submission.work_base)
+        self.local_root = os.path.join(self.local_root, submission.work_base)
         self.remote_root = '$(pwd)'
 
         self.submission_hash = submission.submission_hash

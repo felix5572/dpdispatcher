@@ -55,9 +55,14 @@ class LocalContext(BaseContext) :
         remote_profile:
         """
         assert(type(local_root) == str)
+
+        self.context_type = 'local_context'
+        self.local_root = local_root
+        self.remote_root = remote_root
+        self.remote_profile = remote_profile
+
         self.abs_local_root = os.path.abspath(local_root)
         self.abs_remote_root = os.path.abspath(remote_root)
-        self.remote_profile = remote_profile
         # self.work_profile = work_profile
         # self.job_uuid = job_uuid
         # self.submission = None
@@ -84,7 +89,7 @@ class LocalContext(BaseContext) :
         return instance
 
     def get_job_root(self) :
-        return self.remote_root
+        return self.subm_remote_root
     
     def bind_submission(self, submission):
         self.submission = submission

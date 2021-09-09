@@ -32,6 +32,14 @@ class BaseContext(object):
     def bind_submission(self, submission):
         self.submission = submission
 
+    def serialize(self):
+        context_dict = {}
+        context_dict['context_type'] = self.context_type
+        context_dict['local_root'] = self.local_root
+        context_dict['abs_local_root'] = self.abs_local_root
+        context_dict['remote_root'] = self.remote_root
+        return context_dict
+
     def upload(self, submission):
         raise NotImplementedError('abstract method')
 
