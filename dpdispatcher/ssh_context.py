@@ -66,7 +66,7 @@ class SSHSession (object):
             if count == max_check:
                 raise RuntimeError('cannot connect ssh after %d failures at interval %d s' %
                                     (max_check, sleep_time))
-            dlog.info('connection check failed, try to reconnect to ' + self.remote_root)
+            dlog.info('connection check failed, try to reconnect to ' + self.subm_remote_root)
             self._setup_ssh()
             count += 1
             time.sleep(sleep_time)
@@ -192,6 +192,8 @@ class SSHContext(BaseContext):
         self.remote_root = remote_root
         self.remote_profile = remote_profile
 
+        self.subm_remote_root = None
+
         self.abs_local_root = os.path.abspath(local_root)
         assert os.path.isabs(remote_root), f"remote_root must be a abspath"
         self.abs_remote_root = remote_root
@@ -207,7 +209,7 @@ class SSHContext(BaseContext):
         # self.temp_remote_root = os.path.join(self.ssh_session.get_session_root())
         self.ssh_session.ensure_alive()
         try:
-            self.sftp.mkdir(self.temp_remote_root)
+            self.sftp.mkdir(self.abs_remote_root)
         except OSError: 
             pass
 
@@ -301,12 +303,12 @@ class SSHContext(BaseContext):
                submission,
                # local_up_files,
                dereference = True) :
-        dlog.info(f'remote path: {self.remote_root}')
+        dlog.info(f'subm_remote_root: {self.subm_remote_root}')
         # remote_cwd = 
-        self.ssh_session.sftp.chdir(self.temp_remote_root)
+        self.ssh_session.sftp.chdir(self.abs_remote_root)
         recover = False
         try:
-            self.ssh_session.sftp.mkdir(os.path.basename(self.remote_root))
+            self.ssh_session.sftp.mkdir(os.path.basename(self.subm_remote_root))
         except OSError:
             # mkdir failed meaning it exists, thus the job is recovered
             recover = True
@@ -332,7 +334,7 @@ class SSHContext(BaseContext):
                 jj_rel = pathlib.PurePath(os.path.relpath(jj, self.subm_local_root)).as_posix()
                 sha256_list.append(f"{sha256}  {jj_rel}")
             # write to remote
-            sha256_file = os.path.join(self.remote_root, ".tmp.sha256." + str(uuid.uuid4()))
+            sha256_file = os.path.join(self.subm_remote_root, ".tmp.sha256." + str(uuid.uuid4()))
             self.write_file(sha256_file, "\n".join(sha256_list))
             # check sha256
             # `:` means pass: https://stackoverflow.com/a/2421592/9567349
@@ -398,7 +400,7 @@ class SSHContext(BaseContext):
         self.ssh_session.ensure_alive()
         if asynchronously:
             cmd = "nohup %s >/dev/null &" % cmd
-        stdin, stdout, stderr = self.ssh_session.exec_command(('cd %s ;' % self.remote_root) + cmd)
+        stdin, stdout, stderr = self.ssh_session.exec_command(('cd %s ;' % self.subm_remote_root) + cmd)
         exit_status = stdout.channel.recv_exit_status() 
         if exit_status != 0:
             raise RuntimeError("Get error code %d in calling %s through ssh with job: %s . message: %s" %
@@ -408,29 +410,29 @@ class SSHContext(BaseContext):
     def block_call(self, 
                    cmd) :
         self.ssh_session.ensure_alive()
-        stdin, stdout, stderr = self.ssh_session.exec_command(('cd %s ;' % self.remote_root) + cmd)
+        stdin, stdout, stderr = self.ssh_session.exec_command(('cd %s ;' % self.subm_remote_root) + cmd)
         exit_status = stdout.channel.recv_exit_status() 
         return exit_status, stdin, stdout, stderr
 
     def clean(self) :        
         self.ssh_session.ensure_alive()
-        self._rmtree(self.remote_root)
+        self._rmtree(self.subm_remote_root)
 
     def write_file(self, fname, write_str):
         self.ssh_session.ensure_alive()
-        with self.sftp.open(pathlib.PurePath(os.path.join(self.remote_root, fname)).as_posix(), 'w') as fp :
+        with self.sftp.open(pathlib.PurePath(os.path.join(self.subm_remote_root, fname)).as_posix(), 'w') as fp :
             fp.write(write_str)
 
     def read_file(self, fname):
         self.ssh_session.ensure_alive()
-        with self.sftp.open(pathlib.PurePath(os.path.join(self.remote_root, fname)).as_posix(), 'r') as fp:
+        with self.sftp.open(pathlib.PurePath(os.path.join(self.subm_remote_root, fname)).as_posix(), 'r') as fp:
             ret = fp.read().decode('utf-8')
         return ret
 
     def check_file_exists(self, fname):
         self.ssh_session.ensure_alive()
         try:
-            self.sftp.stat(pathlib.PurePath(os.path.join(self.remote_root, fname)).as_posix())
+            self.sftp.stat(pathlib.PurePath(os.path.join(self.subm_remote_root, fname)).as_posix())
             ret = True
         except IOError:
             ret = False
