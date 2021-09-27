@@ -5,6 +5,7 @@ import time,random,uuid,json,copy
 from dargs.dargs import Argument
 from dpdispatcher.JobStatus import JobStatus
 from dpdispatcher import dlog
+from dpdispatcher.machine import Machine
 from hashlib import sha1
 # from dpdispatcher.slurm import SlurmResources
 #%%
@@ -47,6 +48,7 @@ class Submission(object):
         self.backward_common_files = backward_common_files
 
         self.submission_hash = None
+        self.machine = None
         # warning: can not remote .copy() or there will be bugs
         # self.belonging_tasks = task_list
         self.belonging_tasks = task_list.copy()
@@ -85,11 +87,19 @@ class Submission(object):
             forward_common_files=submission_dict['forward_common_files'],
             backward_common_files=submission_dict['backward_common_files'])
         submission.belonging_jobs = [Job.deserialize(job_dict=job_dict) for job_dict in submission_dict['belonging_jobs']]
-        submission.submission_hash = submission.get_hash()
+        if machine is not None:
+            pass
+        else:
+            machine_dict = submission_dict['machine_dict']
+            if machine_dict is not None:
+                machine = Machine.load_from_dict(machine_dict)
+            else:
+                machine = None
         submission.bind_machine(machine=machine)
+        submission.submission_hash = submission.get_hash()
         return submission
 
-    def serialize(self, if_static=False, if_none_local_root=False):
+    def serialize(self, if_static=False):
         """convert the Submission class instance to a dictionary.
 
         Parameters
@@ -158,8 +168,7 @@ class Submission(object):
         """
         if not self.belonging_jobs:
             self.generate_jobs()
-        # self.try_recover_from_json()
-        self.try_recover_from_db()
+        self.try_recover_from_database()
         self.update_submission_state()
         if self.check_all_finished():
             dlog.info('info:check_all_finished: True')
@@ -169,15 +178,16 @@ class Submission(object):
             self.handle_unexpected_submission_state()
             # self.submission_to_json()
             self.save_to_database()
-            time.sleep(1)
+            time.sleep(0.5)
             self.update_submission_state()
             self.check_all_finished()
             self.handle_unexpected_submission_state()
 
         while not self.check_all_finished():
             if exit_on_submit is True:
-                dlog.info(f"submission succeeded: {self.submission_hash}")
-                dlog.info(f"at {self.machine.context.remote_root}")
+                dlog.info(f"Exit on successful submmitting")
+                dlog.info(f"All jobs of submission were submiited successfully: {self.submission_hash}")
+                dlog.info(f"At {self.machine.context.subm_remote_root}")
                 return self.serialize()
             try:
                 time.sleep(30)
@@ -229,10 +239,10 @@ class Submission(object):
             # self.submission_to_json()
             self.save_to_database()
             raise RuntimeError(
-                f"Meet errors will handle unexpected submission state.\n"
-                f"Debug information: remote_root=={self.machine.context.remote_root}.\n"
+                f"Meet errors while handling unexpected submission state.\n"
+                f"Debug information: subm_remote_root=={self.machine.context.subm_remote_root}.\n"
                 f"Debug information: submission_hash=={self.submission_hash}.\n"
-                f"Please check the dirs and scripts in remote_root"
+                f"Please check the dirs and scripts in subm_remote_root.\n"
                 f"The job information mentioned above may help"
             ) from e
 
@@ -244,8 +254,6 @@ class Submission(object):
     #     for job in self.belonging_jobs:
     #         job.submit_job()
     #     self.get_submission_state()
-
-    # def update_submi
 
     def check_all_finished(self):
         """check whether all the jobs in the submission.
@@ -291,6 +299,7 @@ class Submission(object):
         for ii in random_task_index_ll:
             job_task_list = [ self.belonging_tasks[jj] for jj in ii ]
             job = Job(job_task_list=job_task_list, machine=self.machine, resources=copy.deepcopy(self.resources))
+            job.submission = self
             self.belonging_jobs.append(job)
 
         if self.machine is not None:
@@ -310,8 +319,11 @@ class Submission(object):
     def clean_jobs(self):
         self.machine.context.clean()
 
+    def update_in_database(self):
+        self.machine.database.update_submission_in_database(self)
+
     def save_to_database(self):
-        self.machine.db.save_to_database(self)
+        self.machine.database.save_submission_to_database(self)
 
     def submission_to_json(self):
         # self.update_submission_state()
@@ -329,8 +341,9 @@ class Submission(object):
 
     # def check_if_recover()
 
-    def try_recover_from_db(self):
-        pass
+    def try_recover_from_database(self):
+        # print(self)
+        self.machine.database.recover_submission_from_database(self)
 
     def try_recover_from_json(self):
         submission_file_name = "{submission_hash}.json".format(submission_hash=self.submission_hash)
@@ -497,6 +510,7 @@ class Job(object):
         self.job_hash = self.get_hash()
         self.script_file_name = self.job_hash+ '.sub'
 
+        self.submission = None
 
     def __repr__(self):
         return str(self.serialize())
@@ -561,10 +575,10 @@ class Job(object):
             if ( self.fail_count ) > 0 and ( self.fail_count % 3 == 0 ) :
                 raise RuntimeError(f"job:{self.job_hash} {self.job_id} failed {self.fail_count} times.job_detail:{self}")
             self.submit_job()
-            dlog.info("job:{job_hash} re-submit after terminated; new job_id is {job_id}".format(job_hash=self.job_hash, job_id=self.job_id))
+            dlog.info("job: {job_hash} re-submit after terminated; new job_id is {job_id}".format(job_hash=self.job_hash, job_id=self.job_id))
             time.sleep(0.2)
             self.get_job_state()
-            dlog.info(f"job:{self.job_hash} job_id:{self.job_id} after re-submitting; the state now is {repr(self.job_state)}")
+            dlog.info(f"job: {self.job_hash} job_id:{self.job_id} after re-submitting; the state now is {repr(self.job_state)}")
             self.handle_unexpected_job_state()
 
         if job_state == JobStatus.unsubmitted:

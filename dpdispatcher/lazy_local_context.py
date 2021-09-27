@@ -33,7 +33,7 @@ class LazyLocalContext(BaseContext) :
         assert(type(local_root) == str)
 
 
-        self.context_type = 'lazy_local_context'
+        self.context_type = 'lazylocalcontext'
         self.local_root = local_root
         self.remote_root = local_root
         self.remote_profile = remote_profile

@@ -9,6 +9,7 @@ shell_script_header_template="""
 """
 
 class Shell(Machine):
+    batch_type = 'shell'
     def gen_script(self, job):
         shell_script = super(Shell, self).gen_script(job)
         return shell_script
@@ -23,7 +24,7 @@ class Shell(Machine):
         job_id_name = job.job_hash + '_job_id'
         output_name = job.job_hash + '.out'
         self.context.write_file(fname=script_file_name, write_str=script_str)
-        ret, stdin, stdout, stderr = self.context.block_call('cd %s && { nohup bash %s 1>>%s 2>>%s & } && echo $!' % (self.context.remote_root, script_file_name, output_name, output_name) )
+        ret, stdin, stdout, stderr = self.context.block_call('cd %s && { nohup bash %s 1>>%s 2>>%s & } && echo $!' % (self.context.subm_remote_root, script_file_name, output_name, output_name) )
         if ret != 0:
             err_str = stderr.read().decode('utf-8')
             raise RuntimeError\

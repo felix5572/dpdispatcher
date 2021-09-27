@@ -22,9 +22,7 @@ class TestSSHContext(unittest.TestCase):
         cls.submission = SampleClass.get_sample_submission()
         cls.submission.bind_machine(cls.machine)
         cls.submission_hash = cls.submission.submission_hash
-        file_list = ['bct-1/log.lammps', 'bct-2/log.lammps', 'bct-3/log.lammps', 'bct-4/log.lammps']
-        for file in file_list:
-            cls.machine.context.write_file(file, '# mock log')
+                # cls.machine.context.write_file('mock.log', '# mock log')
     
     def setUp(self):
         self.context = self.__class__.machine.context
@@ -36,12 +34,16 @@ class TestSSHContext(unittest.TestCase):
 
     def test_upload(self):
         self.context.upload(self.__class__.submission)
+
         check_file_list = ['graph.pb', 'bct-1/conf.lmp', 'bct-4/input.lammps']
         for file in check_file_list:
-            self.assertTrue(self.context.check_file_exists(os.path.join(self.context.remote_root, file)))
+            self.assertTrue(self.context.check_file_exists(os.path.join(self.context.subm_remote_root, file)))
 
     def test_download(self):
+        self.context.upload(self.__class__.submission)
+        file_list = ['bct-1/log.lammps', 'bct-2/log.lammps', 'bct-3/log.lammps', 'bct-4/log.lammps']
+        for file in file_list:
+            self.__class__.machine.context.write_file(file, '# mock lammps.log')
         self.context.download(self.__class__.submission)
-        
 
 

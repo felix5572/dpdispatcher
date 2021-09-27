@@ -18,8 +18,8 @@ script_template="""\
 """
 
 script_env_template="""
-REMOTE_ROOT={remote_root}
-echo 0 > $REMOTE_ROOT/{flag_if_job_task_fail}
+SUBM_REMOTE_ROOT={subm_remote_root}
+echo 0 > $SUBM_REMOTE_ROOT/{flag_if_job_task_fail}
 test $? -ne 0 && exit 1
 
 {module_unload_part}
@@ -29,23 +29,24 @@ test $? -ne 0 && exit 1
 """
 
 script_command_template="""
-cd $REMOTE_ROOT
+cd $SUBM_REMOTE_ROOT
 cd {task_work_path}
 test $? -ne 0 && exit 1
 if [ ! -f {task_tag_finished} ] ;then
   {command_env} ( {command} ) {log_err_part}
-  if test $? -eq 0; then touch {task_tag_finished}; else echo 1 > $REMOTE_ROOT/{flag_if_job_task_fail};fi
+  if test $? -eq 0; then touch {task_tag_finished}; else echo 1 > $SUBM_REMOTE_ROOT/{flag_if_job_task_fail};fi
 fi &
 """
 
 script_end_template="""
-cd $REMOTE_ROOT
+cd $SUBM_REMOTE_ROOT
 test $? -ne 0 && exit 1
 
 wait
 FLAG_IF_JOB_TASK_FAIL=$(cat {flag_if_job_task_fail})
 if test $FLAG_IF_JOB_TASK_FAIL -eq 0; then touch {job_tag_finished}; else exit 1;fi
 """
+
 
 class Machine(object):
     """A machine is used to handle the connection with remote machines.
@@ -77,7 +78,11 @@ class Machine(object):
         context=None,
         database=None
     ):
-        self.batch_type = batch_type
+        if batch_type is not None:
+            assert (batch_type == self.__class__.batch_type, 
+                "error: batch_type must be the same as class's batch_type")
+            self.batch_type = self.__class__.batch_type
+
         if context is None:
             assert isinstance(self, self.__class__.subclasses_dict[batch_type])
             context = BaseContext(
@@ -88,14 +93,15 @@ class Machine(object):
             )
         else:
             pass
-        database = BaseDatabase(database_settings)
+
+        database = BaseDatabase(**database_settings)
 
         self.bind_database(database=database)
         self.bind_context(context=context)
 
     def bind_database(self, database):
         self.database = database
-        self.database.bind_machine = self
+        self.database.bind_machine(self)
 
     def bind_context(self, context):
         self.context = context
@@ -118,7 +124,10 @@ class Machine(object):
     def serialize(self):
         machine_dict = {}
         machine_dict['batch_type'] = self.batch_type
-        machine_dict['context_dict'] = self.context.serialize()
+        machine_dict['context_type'] = self.context.context_type
+        machine_dict['local_root'] = self.context.local_root
+        machine_dict['remote_root'] = self.context.remote_root
+        machine_dict['remote_profile'] = self.context.remote_profile
         machine_dict['database_dict'] = self.database.serialize()
         return machine_dict
 
@@ -225,7 +234,7 @@ class Machine(object):
 
         script_env = script_env_template.format(
             flag_if_job_task_fail=flag_if_job_task_fail,
-            remote_root=self.context.remote_root,
+            subm_remote_root=self.context.subm_remote_root,
             module_unload_part=module_unload_part,
             module_load_part=module_load_part,
             source_files_part=source_files_part,

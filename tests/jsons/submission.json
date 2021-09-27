@@ -1,5 +1,15 @@
 {
-    "local_root": null,
+    "machine_dict": {
+        "batch_type": "shell",
+        "context_type": "localcontext",
+        "local_root": "./test_shell_trival_dir",
+        "remote_root": "./tmp_shell_trival_dir",
+        "remote_profile": {},
+        "database_dict": {
+            "database_type": null,
+            "database_location": {}
+        }
+    },
     "work_base": "0_md/",
     "resources": {
         "number_node": 1,

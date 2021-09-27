@@ -10,6 +10,7 @@ shell_script_header_template="""
 """
 
 class DpCloudServer(Machine):
+    batch_type = 'dpcloudserver'
     def __init__(self, context):
         self.context = context
         self.input_data = context.remote_profile['input_data'].copy()

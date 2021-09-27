@@ -20,7 +20,6 @@ class BaseContext(object):
     @classmethod
     def load_from_dict(cls, context_dict):
         context_type = context_dict['context_type']
-        # print("debug778:context_type", cls.subclasses_dict, context_type)
         try:
             context_class = cls.subclasses_dict[context_type]
         except KeyError as e:

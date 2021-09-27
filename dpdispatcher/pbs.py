@@ -11,6 +11,7 @@ pbs_script_header_template="""
 """
 
 class PBS(Machine):
+    batch_type = 'pbs'
     def gen_script(self, job):
         pbs_script = super(PBS, self).gen_script(job)
         return pbs_script

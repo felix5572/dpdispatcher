@@ -1,3 +1,4 @@
+#%%
 from enum import IntEnum
 class JobStatus(IntEnum) :
     unsubmitted = 1
@@ -7,6 +8,12 @@ class JobStatus(IntEnum) :
     finished = 5
     completing = 6
     unknown = 100
-#     def __str__(self):
-#         return repr(self)
 
+#%%
+
+a = JobStatus(1)
+
+
+# %%
+print(int(a))
+# %%

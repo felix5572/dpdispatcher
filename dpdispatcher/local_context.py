@@ -56,13 +56,15 @@ class LocalContext(BaseContext) :
         """
         assert(type(local_root) == str)
 
-        self.context_type = 'local_context'
+        self.context_type = 'localcontext'
         self.local_root = local_root
         self.remote_root = remote_root
         self.remote_profile = remote_profile
 
         self.abs_local_root = os.path.abspath(local_root)
         self.abs_remote_root = os.path.abspath(remote_root)
+        os.makedirs(self.remote_root, exist_ok = True)
+
         # self.work_profile = work_profile
         # self.job_uuid = job_uuid
         # self.submission = None
@@ -74,7 +76,6 @@ class LocalContext(BaseContext) :
         # self.remote_root = os.path.join(work_profile.get_work_root(), self.job_uuid)
         # dlog.debug("local_root is %s"% local_root)
 
-        # os.makedirs(self.remote_root, exist_ok = True)
     
     @classmethod
     def load_from_dict(cls, context_dict):
@@ -120,6 +121,7 @@ class LocalContext(BaseContext) :
    #      return self._local_root
 
     def upload(self, submission):
+        print('debug156', self.subm_remote_root)
         os.makedirs(self.subm_remote_root, exist_ok = True)
         # os.makedirs(self.remote_root, exist_ok = True)
         cwd = os.getcwd()
@@ -376,9 +378,6 @@ class LocalContext(BaseContext) :
 
     def clean(self):
         shutil.rmtree(self.subm_remote_root, ignore_errors=True)
-
-    # def _clean(self) :
-    #     shutil.rmtree(self.remote_root, ignore_errors=True)
 
     def write_file(self, fname, write_str):
         os.makedirs(self.subm_remote_root, exist_ok = True)

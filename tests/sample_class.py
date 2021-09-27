@@ -1,3 +1,4 @@
+from dpdispatcher.machine import Machine
 import os, sys, json, glob, shutil, uuid, time
 import unittest
 from unittest.mock import MagicMock, patch, PropertyMock
@@ -12,7 +13,7 @@ from .context import PBS
 from .context import Slurm
 from .context import JobStatus
 from .context import Submission, Job, Task, Resources
-
+# from .context import BaseDatabase
 class SampleClass(object):
     @classmethod
     def get_sample_resources(cls):
@@ -49,6 +50,22 @@ class SampleClass(object):
             'kwargs': {}
         }
         return resources_dict
+
+    @classmethod
+    def get_sample_machine_dict(cls):
+        machine_dict = {
+            "batch_type": "Shell",
+            "context_type": "LocalContext",
+            "local_root": "./test_shell_trival_dir",
+            "remote_root": "./tmp_shell_trival_dir"
+        }
+        return machine_dict
+    
+    @classmethod
+    def get_sample_machine(cls):
+        machine_dict = cls.get_sample_machine_dict()
+        machine = Machine.load_from_dict(machine_dict)
+        return machine
 
     @classmethod
     def get_sample_task(cls):
@@ -92,6 +109,8 @@ class SampleClass(object):
         task_list = cls.get_sample_task_list()
         submission.register_task_list(task_list)
         submission.generate_jobs()
+        machine = cls.get_sample_machine()
+        submission.bind_machine(machine=machine)
         return submission
 
     @classmethod
@@ -127,3 +146,35 @@ class SampleClass(object):
             remote_root='tmp_slurm_dir/')
         slurm = Slurm(context=local_context)
         return slurm
+
+    @classmethod
+    def get_sample_shell_trival_submission(cls):
+        machine = Machine(
+            batch_type='Shell',
+            context_type='LocalContext',
+            local_root='./test_shell_trival_dir',
+            remote_root='./tmp_shell_trival_dir'
+        )
+
+        resources = Resources(
+            number_node=1,
+            cpu_per_node=4,
+            gpu_per_node=0,
+            queue_name='CPU',
+            group_size=2
+        )
+
+        task1 = Task(command='cat example.txt && sleep 0.5', task_work_path='dir1/', forward_files=['example.txt'], backward_files=['out.txt'], outlog='out.txt')
+        task2 = Task(command='cat example.txt && sleep 0.5', task_work_path='dir2/', forward_files=['example.txt'], backward_files=['out.txt'], outlog='out.txt')
+        task3 = Task(command='cat example.txt && sleep 0.5', task_work_path='dir3/', forward_files=['example.txt'], backward_files=['out.txt'], outlog='out.txt')
+        task4 = Task(command='cat example.txt && sleep 0.5', task_work_path='dir4/', forward_files=['example.txt'], backward_files=['out.txt'], outlog='out.txt')
+        task_list = [task1, task2, task3, task4]
+
+        submission = Submission(work_base='parent_dir/',
+            machine=machine,
+            resources=resources,
+            forward_common_files=['graph.pb'],
+            backward_common_files=[],
+            task_list=task_list
+        )
+        return submission

@@ -18,7 +18,7 @@ class LSF(Machine):
     """
     LSF batch
     """
-
+    batch_type = 'lsf'
     def gen_script(self, job):
         lsf_script = super(LSF, self).gen_script(job)
         return lsf_script

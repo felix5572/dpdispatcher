@@ -15,14 +15,13 @@ class TestSubmission(unittest.TestCase):
         self.maxDiff = None
         pbs = SampleClass.get_sample_pbs_local_context()
         self.submission = SampleClass.get_sample_submission()
-        self.submission.bind_machine(machine=pbs)
+        # self.submission.bind_machine(machine=pbs)
 
-        #  self.submission2 = Submission.submission_from_json('jsons/submission.json')
-        # self.submission2 = Submission.submission_from_json('jsons/submission.json')
-    
     def test_serialize_deserialize(self):
-        self.assertEqual(self.submission.serialize(if_none_local_root=True), 
-            Submission.deserialize(submission_dict=self.submission.serialize(if_none_local_root=True)).serialize(if_none_local_root=True))
+        # print('debug1891', self.submission.machine)
+        machine = self.submission.machine
+        self.assertEqual(self.submission.serialize(), 
+            Submission.deserialize(submission_dict=self.submission.serialize(), machine=machine).serialize())
 
     def test_get_hash(self):
         pass
@@ -80,7 +79,7 @@ class TestSubmission(unittest.TestCase):
         submission2 = Submission.submission_from_json('jsons/submission.json')
         # print('<<<<<<<', self.submission)
         # print('>>>>>>>', submission2)
-        self.assertEqual(self.submission.serialize(if_none_local_root=True), submission2.serialize())
+        self.assertEqual(self.submission.serialize(), submission2.serialize())
 
     def test_submission_json(self):
         with open('jsons/submission.json') as f:

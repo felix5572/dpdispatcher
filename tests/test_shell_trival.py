@@ -1,5 +1,6 @@
 # from dpdispatcher.batch_object import BatchObject
 # from dpdispatcher.batch import Batch
+from dpdispatcher import submission
 import sys, os, shutil
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 __package__ = 'tests'
@@ -79,8 +80,7 @@ class TestShellTrival(unittest.TestCase):
 
         machine = Machine(**machine_dict['machine'])
         resources = Resources(**machine_dict['resources'])
-
-        pass
+        # submission =
 
 
     @classmethod

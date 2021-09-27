@@ -14,6 +14,7 @@ slurm_script_header_template="""\
 {slurm_partition_line}"""
 
 class Slurm(Machine):
+    batch_type = 'slurm'
     def gen_script(self, job):
         slurm_script = super(Slurm, self).gen_script(job)
         return slurm_script

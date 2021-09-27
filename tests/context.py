@@ -25,6 +25,7 @@ except:
     pass
 from dpdispatcher.submission import Submission, Job, Task, Resources
 from dpdispatcher.machine import Machine
+from dpdispatcher.database import BaseDatabase
 import dargs
 
 def setUpModule():
@@ -32,3 +33,10 @@ def setUpModule():
 
 def get_file_md5(file_path):
     return hashlib.md5(pathlib.Path(file_path).read_bytes()).hexdigest()
+
+global UNITTEST_DIR_PREFIX
+UNITTEST_DIR_PREFIX = os.path.dirname(os.path.realpath(__file__))
+print(f"dpdispatcher developer note:"
+    "for unittest usage\n"
+    "use global variable UNITTEST_DIR_PREFEX={UNITTEST_DIR_PREFIX}\n"
+    "\n\n")

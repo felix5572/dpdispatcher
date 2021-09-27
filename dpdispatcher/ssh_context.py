@@ -187,7 +187,7 @@ class SSHContext(BaseContext):
         
         assert(type(local_root) == str)
 
-        self.batch_type = 'ssh_context'
+        self.batch_type = 'sshcontext'
         self.local_root = local_root
         self.remote_root = remote_root
         self.remote_profile = remote_profile
@@ -270,13 +270,10 @@ class SSHContext(BaseContext):
         # dlog.debug("debug:SSHContext.bind_submission"
         #     "{submission.submission_hash}; {self.local_root}; {self.remote_root")
 
-        # try:
-        # print('self.remote_root', self.remote_root)
-        # sftp = self.ssh_session.ssh.open_sftp() 
-        # sftp.mkdir(self.remote_root)
-        # sftp.close()
-        # except:
-        #     pass
+        try:
+            self.sftp.mkdir(self.subm_remote_root)
+        except:
+            pass
 
     def _walk_directory(self, files, work_path, file_list, directory_list):
         """Convert input path to list of files and directories."""
@@ -362,7 +359,7 @@ class SSHContext(BaseContext):
         cwd = os.getcwd()
         os.chdir(self.subm_local_root) 
         file_list = []
-        # for ii in job_dirs :
+        # for ii in job_dirs:
         for task in submission.belonging_tasks :
             for jj in task.backward_files:
                 file_name = os.path.join(task.task_work_path, jj)                
